@@ -119,8 +119,6 @@ class Featured_Category_Ad_Widget extends WP_Widget {
      * @uses    the_permalink
      * @uses    the_post
      * @uses    the_post_thumbnail
-     * @uses    the_title
-     * @uses    the_title_attribute
      * @uses    wp_get_post_categories
      *
      * @param   array $args
@@ -130,241 +128,59 @@ class Featured_Category_Ad_Widget extends WP_Widget {
         extract( $args );
 
         /** User-selected settings. */
-        $title          = apply_filters( 'widget_title', $instance['title'] );
-        $cat_choice     = $instance['cat_choice'];
-        $union          = $instance['union'];
-        $use_current    = $instance['use_current'];
         $show_count     = $instance['show_count'];
         $offset         = $instance['offset'];
         $sort_order     = $instance['sort_order'];
-        $use_thumbnails = $instance['use_thumbnails'];
-        $content_thumb  = $instance['content_thumb'];
-        $excerpt_thumb  = $instance['excerpt_thumb'];
-        $show_meta      = $instance['show_meta'];
-        $show_comments  = $instance['show_comments'];
-        $show_cats      = $instance['show_cats'];
-        $show_cat_desc	= $instance['show_cat_desc'];
-        $link_title     = $instance['link_title'];
-        $show_tags      = $instance['show_tags'];
-        $only_titles    = $instance['only_titles'];
-        $no_titles      = $instance['no_titles'];
-        $show_full      = $instance['show_full'];
-        $excerpt_length	= $instance['excerpt_length'];
-        $no_excerpt     = $instance['no_excerpt'];
         /** Plugin requires counter variable to be part of its arguments?! */
         $count          = $instance['count'];
 
         /** @var    $before_widget  string - defined by theme */
         echo $before_widget;
 
-        /**
-         * @var $cat_choice_class - CSS element created from category choices by removing whitespace and replacing commas with hyphens
-         */
-        $cat_choice_class = preg_replace( '/\\040/', '', $cat_choice );
-        $cat_choice_class = preg_replace( "/[,]/", "-", $cat_choice_class );
+        echo $before_title . '<span class="fcad-cat-class"></span><a href="<?php echo site_url(); ?>/sponsored/" rel="nofollow" title="More sponsored content">Sponsored</a>' . $after_title;
 
-        /** Check if multiple categories have been chosen */
-        if ( strpos( $cat_choice_class, '-' ) !== false ) {
-            $multiple_cats = true;
-        } else {
-            $multiple_cats = false;
-        } /** End if - string position */
+        ?>
 
-        /** Widget $title, $before_widget, and $after_widget defined by theme */
-        if ( $title ) {
-            /**
-             * @var $before_title   string - defined by theme
-             * @var $after_title    string - defined by theme
-             */
-            if ( ( true == $link_title ) && ( false == $multiple_cats ) ) {
-                echo $before_title . '<span class="fcad-cat-class-' . $cat_choice_class . '"></span><a href="' . get_category_link( $cat_choice ) . '">More in ' . $title . '</a>' . $after_title;
-            } else {
-                echo $before_title . '<span class="fcad-cat-class-' . $cat_choice_class . '">' . $title . '</span>' . $after_title;
-            } /** End if - link title */
-        } /** End if - title */
-
-        /** Display posts from widget settings */
-        /**
-         * If viewing a page displaying a single post add the current post
-         * first category to category choices used by plugin
-         */
-        if ( is_single() && $use_current ){
-            $cat_choices = wp_get_post_categories( get_the_ID() );
-            $cat_choice = $cat_choices[0];
-        } /** End if - is single and use current */
-
-        /** @var array $query_args - holds query arguments to be passed */
-        $query_args = array(
-            'cat'               => $cat_choice,
-            'posts_per_page'    => $show_count,
-            'offset'            => $offset,
-        );
-
-        /**
-         * Check if $sort_order is set to rand (random) and use the `orderby`
-         * parameter; otherwise use the `order` parameter
-         */
-        if ( 'rand' == $sort_order ) {
-            $query_args = array_merge( $query_args, array( 'orderby' => $sort_order ) );
-        } else {
-            $query_args = array_merge( $query_args, array( 'order' => $sort_order ) );
-        } /** End if - set query argument parameter */
-
-        /**
-         * Check if post need to be in *all* categories and make necessary
-         * changes to the data so it can be correctly used
-         */
-        if ( $union ) {
-
-            /** Remove the default use any category parameter */
-            unset( $query_args['cat'] );
-
-            /** @var string $cat_choice - category choices without spaces */
-            $cat_choice = preg_replace( '/\s+/', '', $cat_choice );
-            /** @var array $cat_choice_union - derived from the string */
-            $cat_choice_union = explode( ",", $cat_choice );
-
-            /** Sanity testing? - Change strings to integer values */
-            foreach ($cat_choice_union AS $index => $value)
-                $cat_choice_union[$index] = (int)$value;
-
-            /** @var array $query_args - merged new query arguments */
-            $query_args = array_merge( $query_args, array( 'category__and' => $cat_choice_union ) );
-
-        } /** End if - do we want to use a union of the categories */
-
-
-        /** @var $fcad_query - object of posts matching query criteria */
-        $fcad_query = false;
-        /** Allow query to be completely over-written via `fcad_query` hook */
-        apply_filters( 'fcad_query', $fcad_query );
-        if ( false == $fcad_query ) {
-            $fcad_query = new WP_Query( $query_args );
-        } /** End if - fcad query is false, use plugin arguments */
-
-        /** @var $fcad_output - hook test */
-        $fcad_output = false;
-        /** Allow entire output to be filtered via hook `fcad_output` */
-        apply_filters( 'fcad_output', $fcad_output );
-        if ( false == $fcad_output ) {
-
-            if ( $show_cat_desc ) {
-                echo '<div class="fcad-cat-desc">' . category_description() . '</div>';
-            } /** End if - show category description */
-
-            if ( $fcad_query->have_posts() ) : while ( $fcad_query->have_posts() ) : $fcad_query->the_post();
-                if ( $count == $show_count ) {
-                    break;
-                } else {
-                    if ( $count == 0 ) { ?>
-                        <div <?php post_class(); ?>>
-                    <?php } else { ?>
-                        <li <?php post_class(); ?>>
-                    <?php } ?>
-                        
-                        <div class="post-details">
-                            <?php if ( $show_meta ) {
-                                echo apply_filters( 'fcad_show_meta', sprintf( __( 'by %1$s on %2$s', 'fc-ad' ), get_the_author(), get_the_time( get_option( 'date_format' ) ) ) ); ?><br />
-                            <?php }
-                            if ( ( $show_comments ) && ( ! post_password_required() ) ) {
-                                comments_popup_link( __( 'with No Comments', 'fc-ad' ), __( 'with 1 Comment', 'fc-ad' ), __( 'with % Comments', 'fc-ad' ), '', __( 'with Comments Closed', 'fc-ad' ) ); ?><br />
-                            <?php }
-                            if ( $show_cats ) {
-                                echo apply_filters( 'fcad_show_cats', sprintf( __( 'in %s', 'fc-ad' ), get_the_category_list( ', ' ) ) ); ?><br />
-                            <?php }
-                            if ( $show_tags ) {
-                                the_tags( __( 'as ', 'fc-ad' ), ', ', '' ); ?><br />
-                            <?php } ?>
-                        </div> <!-- .post-details -->
-                        <?php if ( ! $only_titles ) { ?>
-
+        <div class="post type-post status-publish format-standard hentry category-sponsored">
+                <div class="fcad-content">
+                    <a href="<?php echo site_url(); ?>/sponsored/" rel="nofollow" title="Link to sponsored content" class="fcad-thumb-link">
+                        <span class="fcad-thumb" style="background-image:url('<?php echo get_stylesheet_directory_uri() . '/images/sponsored-example.png'; ?>');"></span>
+                    </a>
+                    <h4>
+                        <a href="<?php echo site_url(); ?>/sponsored/" rel="nofollow" title="Link to sponsored content">This is sponsored content down here in the category widgets, too.</a>
+                    </h4>
+                    <p>This is a little blurb about whatever it is in this here sponsored story. This is "advertorial" content that will complement our coverage of the topic at hand with value for readers but sponsored by an advertiser to help pay the bills.</p>
+                    <ul>
+                        <li class="post type-post status-publish format-standard hentry category-sponsored">
                             <div class="fcad-content">
-
-                            <?php /** Conditions: Theme supports post-thumbnails -and- there is a post-thumbnail -and- the option to show the post thumbnail is checked */
-                                if ( ( current_theme_supports( 'post-thumbnails' ) && has_post_thumbnail() && ( $use_thumbnails ) ) && $count == 0 ) { 
-                                    $large_image_url = wp_get_attachment_image_src( get_post_thumbnail_id(), 'medium'); ?>
-                                    <a href="<?php the_permalink() ?>" rel="bookmark" title="<?php _e( 'Permanent Link to', 'fc-ad' ); ?> <?php the_title_attribute(); ?>" class="fcad-thumb-link"><span class="fcad-thumb" style="background-image:url('<?php echo $large_image_url[0]; ?>');"></span></a>
-                                <?php } /** End if */
-
-                                if ( ! $no_titles ) { 
-                                    if ( $count == 0 ) { ?>
-                                        <h4>
-                                    <?php } else { ?>
-                                        <h5>
-                                    <?php } ?>
-                                    <a href="<?php the_permalink() ?>" rel="bookmark" title="<?php _e( 'Permanent Link to', 'fc-ad' ); ?> <?php the_title_attribute(); ?>"><?php the_title(); ?></a>
-                                    <?php if ( $count == 0 ) { ?>
-                                        </h4>
-                                    <?php } else { ?>
-                                        </h5>
-                                    <?php }
-                                    
-                                }
-
-                                if ( $show_full ) {
-
-                                    the_content(); ?>
-
-                                    <div class="fcad-clear"></div>
-
-                                    <?php wp_link_pages( array( 'before' => '<p><strong>' . __( 'Pages: ', 'fc-ad') . '</strong>', 'after' => '</p>', 'next_or_number' => 'number' ) );
-
-                                } elseif ( isset( $instance['excerpt_length']) && $instance['excerpt_length'] > 0 ) {
-
-                                    /* if ( current_theme_supports( 'post-thumbnails' ) && has_post_thumbnail() && ( $use_thumbnails ) ) { ?>
-                                        <a href="<?php the_permalink() ?>" rel="bookmark" title="<?php _e( 'Permanent Link to', 'fc-ad' ); ?> <?php the_title_attribute(); ?>"><?php the_post_thumbnail( array( $excerpt_thumb, $excerpt_thumb ) , array( 'class' => 'alignleft' ) ); ?></a>
-                                    <?php } /** End if */
-
-                                    echo $this->custom_excerpt( $instance['excerpt_length'] );
-
-                                } elseif ( ! $instance['no_excerpt'] ) {
-
-                                    /* if ( current_theme_supports( 'post-thumbnails' ) && has_post_thumbnail() && ( $use_thumbnails ) ) { ?>
-                                        <a href="<?php the_permalink() ?>" rel="bookmark" title="<?php _e( 'Permanent Link to', 'fc-ad' ); ?> <?php the_title_attribute(); ?>"><?php the_post_thumbnail( array( $excerpt_thumb, $excerpt_thumb ) , array( 'class' => 'alignleft' ) ); ?></a>
-                                    <?php } /** End if */
-
-                                    if ( $count == 0 ) { the_excerpt(); ?>
-                                        <ul>
-                                    <?php }
-
-                                } else {
-
-                                    /* if ( current_theme_supports( 'post-thumbnails' ) && has_post_thumbnail() && ( $use_thumbnails ) ) { ?>
-                                        <a href="<?php the_permalink() ?>" rel="bookmark" title="<?php _e( 'Permanent Link to', 'fc-ad' ); ?> <?php the_title_attribute(); ?>"><?php the_post_thumbnail( array( $content_thumb, $content_thumb ) , array( 'class' => 'alignleft' ) ); ?></a>
-                                    <?php } /** End if */
-
-                                } /** End if - show full */ ?>
-                            <?php if ( !( $count == 0 ) ) { ?>
-                                </div> <!-- .fcad-content -->
-                            <?php }
-                        } /** End if - not only titles */ 
-
-                    if ( !( $count == 0 ) ) { ?>
+                                <h5>
+                                    <a href="<?php echo site_url(); ?>/sponsored/" rel="nofollow" title="Permanent Link to sponsored content">This is a second hed of sponsored content</a>
+                                </h5>
+                            </div> <!-- .fcad-content -->
                         </li> <!-- .post #post-ID -->
-                    <?php } 
+                        <li class="post type-post status-publish format-standard hentry category-sponsored">
+                            <div class="fcad-content">
+                                <h5>
+                                    <a href="<?php echo site_url(); ?>/sponsored/" rel="nofollow" title="Permanent Link to sponsored content">This is a third hed of sponsored content</a>
+                                </h5>
+                            </div> <!-- .fcad-content -->
+                        </li> <!-- .post #post-ID -->
+                        <li class="post type-post status-publish format-standard hentry category-sponsored">
+                            <div class="fcad-content">
+                                <h5>
+                                    <a href="<?php echo site_url(); ?>/sponsored/" rel="nofollow" title="Permanent Link to sponsored content">This is a fourth hed of sponsored content</a>
+                                </h5>
+                            </div> <!-- .fcad-content -->
+                        </li> <!-- .post #post-ID -->
+                    </ul>
+                <div class="clear"></div>
+            </div>
+            </div>
 
-                    $count++;
-
-                    if ( $count == $show_count ) { ?>
-                            </ul>
-                            <div class="clear"></div>
-                        </div>
-                    </div>
-                <?php }
-                } /** End if - count */
-                endwhile;
-            else :
-                _e( 'No sponosred content to display.', 'fc-ad' );
-            endif;
-
-        } /** End if - replace entire output when hook `fcad_output` is used */
+        <?php
 
         /** @var $after_widget string - defined by theme */
         echo $after_widget;
-
-        /** Reset post data - see $fcad_query object */
-        wp_reset_postdata();
-        // wp_reset_query();
 
     } /** End function - widget */
 
@@ -381,27 +197,9 @@ class Featured_Category_Ad_Widget extends WP_Widget {
         $instance = $old_instance;
 
         /** Strip tags (if needed) and update the widget settings */
-        $instance['title']          = strip_tags( $new_instance['title'] );
-        $instance['cat_choice']     = strip_tags( $new_instance['cat_choice'] );
-        $instance['union']          = $new_instance['union'];
-        $instance['use_current']    = $new_instance['use_current'];
         $instance['show_count']     = $new_instance['show_count'];
         $instance['offset']         = $new_instance['offset'];
         $instance['sort_order']     = $new_instance['sort_order'];
-        $instance['use_thumbnails'] = $new_instance['use_thumbnails'];
-        $instance['content_thumb']  = $new_instance['content_thumb'];
-        $instance['excerpt_thumb']  = $new_instance['excerpt_thumb'];
-        $instance['show_meta']      = $new_instance['show_meta'];
-        $instance['show_comments']  = $new_instance['show_comments'];
-        $instance['show_cats']      = $new_instance['show_cats'];
-        $instance['show_cat_desc']  = $new_instance['show_cat_desc'];
-        $instance['link_title']     = $new_instance['link_title'];
-        $instance['show_tags']      = $new_instance['show_tags'];
-        $instance['only_titles']    = $new_instance['only_titles'];
-        $instance['no_titles']      = $new_instance['no_titles'];
-        $instance['show_full']      = $new_instance['show_full'];
-        $instance['excerpt_length']	= $new_instance['excerpt_length'];
-        $instance['no_excerpt']     = $new_instance['no_excerpt'];
         /** Added to reset count for every instance of the plugin */
         $instance['count']          = $new_instance['count'];
 
@@ -430,72 +228,25 @@ class Featured_Category_Ad_Widget extends WP_Widget {
     function form( $instance ) {
         /** Set default widget settings */
         $defaults = array(
-            'title'             => __( 'Featured Category Ad', 'fc-ad' ),
-            'cat_choice'        => '1',
-            'union'             => false,
-            'use_current'       => false,
             'count'             => '0',
             'show_count'        => '3',
             'offset'            => '0',
-            'sort_order'        => 'desc',
-            'use_thumbnails'    => true,
-            'content_thumb'     => '100',
-            'excerpt_thumb'     => '50',
-            'show_meta'         => false,
-            'show_comments'     => false,
-            'show_cats'         => false,
-            'show_cat_desc'     => false,
-            'link_title'        => false,
-            'show_tags'         => false,
-            'only_titles'       => false,
-            'no_titles'         => false,
-            'show_full'         => false,
-            'excerpt_length'    => '',
-            'no_excerpt'        => false
+            'sort_order'        => 'desc'
         );
         $instance = wp_parse_args( (array) $instance, $defaults );
         ?>
-        <p>
-            <label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:', 'fc-ad' ); ?></label>
-            <input id="<?php echo $this->get_field_id( 'title' ); ?>" name="<?php echo $this->get_field_name( 'title' ); ?>" value="<?php echo $instance['title']; ?>" style="width:95%;" />
-        </p>
-
-        <p>
-            <label for="<?php echo $this->get_field_id( 'cat_choice' ); ?>"><?php _e( 'Category IDs, separated by commas:', 'fc-ad' ); ?></label>
-            <input id="<?php echo $this->get_field_id( 'cat_choice' ); ?>" name="<?php echo $this->get_field_name( 'cat_choice' ); ?>" value="<?php echo $instance['cat_choice']; ?>" style="width:95%;" />
-        </p>
-
-        <p>
-            <input class="checkbox" type="checkbox" <?php checked( (bool) $instance['union'], true ); ?> id="<?php echo $this->get_field_id( 'union' ); ?>" name="<?php echo $this->get_field_name( 'union' ); ?>" />
-            <label for="<?php echo $this->get_field_id( 'union' ); ?>"><?php _e( "<strong>ONLY</strong> show posts that have <strong>ALL</strong> Categories?", 'fc-ad' ); ?></label>
-        </p>
-
-        <p>
-            <input class="checkbox" type="checkbox" <?php checked( (bool) $instance['show_cat_desc'], true ); ?> id="<?php echo $this->get_field_id( 'show_cat_desc' ); ?>" name="<?php echo $this->get_field_name( 'show_cat_desc' ); ?>" />
-            <label for="<?php echo $this->get_field_id( 'show_cat_desc' ); ?>"><?php _e( "Show first category's description?", 'fc-ad' ); ?></label>
-        </p>
-
-        <p>
-            <input class="checkbox" type="checkbox" <?php checked( (bool) $instance['link_title'], true ); ?> id="<?php echo $this->get_field_id( 'link_title' ); ?>" name="<?php echo $this->get_field_name( 'link_title' ); ?>" />
-            <label for="<?php echo $this->get_field_id( 'link_title' ); ?>"><?php _e( 'Link widget title to category?<br /><strong>NB: Use a single category choice only!</strong>', 'fc-ad' ); ?></label>
-        </p>
-
-        <p>
-            <input class="checkbox" type="checkbox" <?php checked( (bool) $instance['use_current'], true ); ?> id="<?php echo $this->get_field_id( 'use_current' ); ?>" name="<?php echo $this->get_field_name( 'use_current' ); ?>" />
-            <label for="<?php echo $this->get_field_id( 'use_current' ); ?>"><?php _e( 'Use current category in single view?', 'fc-ad' ); ?></label>
-        </p>
 
         <table class="fcad-counts">
             <tr>
                 <td>
                     <p>
-                        <label for="<?php echo $this->get_field_id( 'show_count' ); ?>"><?php _e( 'Posts to Display:', 'fc-ad' ); ?></label>
+                        <label for="<?php echo $this->get_field_id( 'show_count' ); ?>"><?php _e( 'Items to Display:', 'fc-ad' ); ?></label>
                         <input id="<?php echo $this->get_field_id( 'show_count' ); ?>" name="<?php echo $this->get_field_name( 'show_count' ); ?>" value="<?php echo $instance['show_count']; ?>" style="width:85%;" />
                     </p>
                 </td>
                 <td>
                     <p>
-                        <label for="<?php echo $this->get_field_id( 'offset' ); ?>"><?php _e( 'Posts Offset:', 'fc-ad' ); ?></label>
+                        <label for="<?php echo $this->get_field_id( 'offset' ); ?>"><?php _e( 'Items Offset:', 'fc-ad' ); ?></label>
                         <input id="<?php echo $this->get_field_id( 'offset' ); ?>" name="<?php echo $this->get_field_name( 'offset' ); ?>" value="<?php echo $instance['offset']; ?>" style="width:85%;" />
                     </p>
                 </td>
@@ -513,94 +264,6 @@ class Featured_Category_Ad_Widget extends WP_Widget {
                 </td>
             </tr>
         </table><!-- End table -->
-
-        <hr />
-        <!-- The following option choices may affect the widget option panel layout -->
-        <p><?php _e( 'NB: Some options may not be available depending on which ones are selected.', 'fc-ad'); ?></p>
-        <p class="fcad-display-all-posts-check">
-            <input class="checkbox" type="checkbox" <?php checked( (bool) $instance['only_titles'], true ); ?> id="<?php echo $this->get_field_id( 'only_titles' ); ?>" name="<?php echo $this->get_field_name( 'only_titles' ); ?>" />
-            <?php $all_options_toggle = ( checked( (bool) $instance['only_titles'], true, false ) ) ? 'closed' : 'open'; ?>
-            <label for="<?php echo $this->get_field_id( 'only_titles' ); ?>"><?php _e( 'ONLY display Post Titles?', 'fc-ad' ); ?></label>
-        </p>
-
-        <p class="fcad-all-options-<?php echo $all_options_toggle; ?> fcad-no-titles">
-            <input class="checkbox" type="checkbox" <?php checked( (bool) $instance['no_titles'], true ); ?> id="<?php echo $this->get_field_id( 'no_titles' ); ?>" name="<?php echo $this->get_field_name( 'no_titles' ); ?>" />
-            <label for="<?php echo $this->get_field_id( 'no_titles' ); ?>"><?php _e( 'Do NOT display Post Titles?', 'fc-ad' ); ?></label>
-        </p>
-
-        <!-- If the theme supports post-thumbnails carry on; otherwise hide the thumbnails section -->
-        <?php if ( ! current_theme_supports( 'post-thumbnails' ) ) {
-            echo '<div class="fcad-thumbnails-closed">';
-        } /** End if - not post thumbnails */ ?>
-            <p class="fcad-all-options-<?php echo $all_options_toggle; ?> fcad-display-thumbnail-sizes"><!-- Hide all options below if ONLY post titles are to be displayed -->
-                <input class="checkbox" type="checkbox" <?php checked( (bool) $instance['use_thumbnails'], true ); ?> id="<?php echo $this->get_field_id( 'use_thumbnails' ); ?>" name="<?php echo $this->get_field_name( 'use_thumbnails' ); ?>" />
-                <?php $thumbnails_toggle = ( checked( (bool) $instance['use_thumbnails'], true, false ) ) ? 'open' : 'closed'; ?>
-                <label for="<?php echo $this->get_field_id( 'use_thumbnails' ); ?>"><?php _e( 'Use Featured Image Thumbnails?', 'fc-ad' ); ?></label>
-            </p>
-
-            <table class="fcad-thumbnails-<?php echo $thumbnails_toggle; ?> fcad-all-options-<?php echo $all_options_toggle; ?>"><!-- Hide table if featured image / thumbnails are not used -->
-                <tr>
-                    <td>
-                        <p>
-                            <label for="<?php echo $this->get_field_id( 'content_thumb' ); ?>"><?php _e( 'Content Thumbnail Size (in px):', 'fc-ad' ); ?></label>
-                            <input id="<?php echo $this->get_field_id( 'content_thumb' ); ?>" name="<?php echo $this->get_field_name( 'content_thumb' ); ?>" value="<?php echo $instance['content_thumb']; ?>" style="width:85%;" />
-                        </p>
-                    </td>
-                    <td>
-                        <p>
-                            <label for="<?php echo $this->get_field_id( 'excerpt_thumb' ); ?>"><?php _e( 'Excerpt Thumbnail Size (in px):', 'fc-ad' ); ?></label>
-                            <input id="<?php echo $this->get_field_id( 'excerpt_thumb' ); ?>" name="<?php echo $this->get_field_name( 'excerpt_thumb' ); ?>" value="<?php echo $instance['excerpt_thumb']; ?>" style="width:85%;" />
-                        </p>
-                    </td>
-                </tr>
-            </table> <!-- End table -->
-        <?php if ( ! current_theme_supports( 'post-thumbnails' ) ) {
-            echo '</div><!-- fcad-thumbnails-closed -->';
-        } /** End if - not post thumbnails */ ?>
-
-        <!-- Carry on from here if there is no thumbnail support -->
-
-        <p class="fcad-all-options-<?php echo $all_options_toggle; ?>">
-            <input class="checkbox" type="checkbox" <?php checked( (bool) $instance['show_meta'], true ); ?> id="<?php echo $this->get_field_id( 'show_meta' ); ?>" name="<?php echo $this->get_field_name( 'show_meta' ); ?>" />
-            <label for="<?php echo $this->get_field_id( 'show_meta' ); ?>"><?php _e( 'Display Author Meta Details?', 'fc-ad' ); ?></label>
-        </p>
-
-        <p class="fcad-all-options-<?php echo $all_options_toggle; ?>">
-            <input class="checkbox" type="checkbox" <?php checked( (bool) $instance['show_comments'], true ); ?> id="<?php echo $this->get_field_id( 'show_comments' ); ?>" name="<?php echo $this->get_field_name( 'show_comments' ); ?>" />
-            <label for="<?php echo $this->get_field_id( 'show_comments' ); ?>"><?php _e( 'Display Comment Totals?', 'fc-ad' ); ?></label>
-        </p>
-
-        <p class="fcad-all-options-<?php echo $all_options_toggle; ?>">
-            <input class="checkbox" type="checkbox" <?php checked( (bool) $instance['show_cats'], true ); ?> id="<?php echo $this->get_field_id( 'show_cats' ); ?>" name="<?php echo $this->get_field_name( 'show_cats' ); ?>" />
-            <label for="<?php echo $this->get_field_id( 'show_cats' ); ?>"><?php _e( 'Display the Post Categories?', 'fc-ad' ); ?></label>
-        </p>
-
-        <p class="fcad-all-options-<?php echo $all_options_toggle; ?>">
-            <input class="checkbox" type="checkbox" <?php checked( (bool) $instance['show_tags'], true ); ?> id="<?php echo $this->get_field_id( 'show_tags' ); ?>" name="<?php echo $this->get_field_name( 'show_tags' ); ?>" />
-            <label for="<?php echo $this->get_field_id( 'show_tags' ); ?>"><?php _e( 'Display the Post Tags?', 'fc-ad' ); ?></label>
-        </p>
-
-        <p class="fcad-all-options-<?php echo $all_options_toggle; ?> fcad-excerpt-option-open-check">
-            <input class="checkbox" type="checkbox" <?php checked( (bool) $instance['show_full'], true ); ?> id="<?php echo $this->get_field_id( 'show_full' ); ?>" name="<?php echo $this->get_field_name( 'show_full' ); ?>" />
-            <?php $show_full_toggle = ( checked( (bool) $instance['show_full'], true, false ) ) ? 'closed' : 'open'; ?>
-            <label for="<?php echo $this->get_field_id( 'show_full' ); ?>"><?php _e( 'Display entire Post?', 'fc-ad' ); ?></label>
-        </p>
-
-        <hr />
-        <!-- Hide excerpt explanation and word count option if entire post is displayed -->
-        <p class="fcad-all-options-<?php echo $all_options_toggle; ?> fcad-excerpt-option-<?php echo $show_full_toggle; ?>">
-            <?php _e( 'The post excerpt is shown by default, if it exists; otherwise the first 55 words of the post are shown as the excerpt ...', 'fc-ad'); ?>
-        </p>
-
-        <p class="fcad-all-options-<?php echo $all_options_toggle; ?> fcad-excerpt-option-<?php echo $show_full_toggle; ?>">
-            <label for="<?php echo $this->get_field_id( 'excerpt_length' ); ?>"><?php _e( '... or set the amount of words you want to show:', 'fc-ad' ); ?></label>
-            <input id="<?php echo $this->get_field_id( 'excerpt_length' ); ?>" name="<?php echo $this->get_field_name( 'excerpt_length' ); ?>" value="<?php echo $instance['excerpt_length']; ?>" style="width:95%;" />
-        </p>
-
-        <p class="fcad-all-options-<?php echo $all_options_toggle; ?> fcad-excerpt-option-<?php echo $show_full_toggle; ?>">
-            <label for="<?php echo $this->get_field_id( 'no_excerpt' ); ?>"><?php _e( '... or have no excerpt at all!', 'fc-ad' ); ?></label>
-            <input class="checkbox" type="checkbox" <?php checked( (bool) $instance['no_excerpt'], true ); ?> id="<?php echo $this->get_field_id( 'no_excerpt' ); ?>" name="<?php echo $this->get_field_name( 'no_excerpt' ); ?>" />
-        </p>
 
     <?php } /** End function - form */
 
@@ -766,28 +429,10 @@ class Featured_Category_Ad_Widget extends WP_Widget {
 
         the_widget( 'Featured_Category_Ad_Widget',
             $instance = shortcode_atts( array(
-                'title'             => __( 'Featured Category Ad', 'fc-ad' ),
-                'cat_choice'        => '1',
-                'union'             => false,
-                'use_current'       => false,
                 'count'             => '0',
                 'show_count'        => '3',
                 'offset'            => '0',
-                'sort_order'        => 'DESC',
-                'use_thumbnails'    => true,
-                'content_thumb'     => '100',
-                'excerpt_thumb'     => '50',
-                'show_meta'         => false,
-                'show_comments'     => false,
-                'show_cats'         => false,
-                'show_cat_desc'     => false,
-                'link_title'        => false,
-                'show_tags'         => false,
-                'only_titles'       => false,
-                'no_titles'         => false,
-                'show_full'         => false, /** Do not set to true!!! */
-                'excerpt_length'    => '',
-                'no_excerpt'        => false
+                'sort_order'        => 'DESC'
             ), $atts, 'fcad' ),
             $args = array(
                 /** clear variables defined by theme for widgets */
